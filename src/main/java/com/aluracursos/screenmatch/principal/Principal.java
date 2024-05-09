@@ -24,8 +24,9 @@ public class Principal {
         var json = consumoAPI.obtenerDatos(URL_BASE + nombreSerie.replace(" ", "+") + APIKEY);
         //https://www.omdbapi.com/?t=game+of+thrones&apikey=4fc7c187
         DatosSerie datos = conversor.obtenerDatos(json, DatosSerie.class);
-        //System.out.println(datos);
+        System.out.println(datos);
 
+        // Busca los datos de todas las temporadas
         List<DatosTemporada> temporadas = new ArrayList<>();
 
         for (int i = 1; i <= datos.totalTemporadas(); i++) {
@@ -33,14 +34,16 @@ public class Principal {
             DatosTemporada datosTemporada = conversor.obtenerDatos(json, DatosTemporada.class);
             temporadas.add(datosTemporada);
         }
-         temporadas.forEach(System.out::println);
+         // temporadas.forEach(System.out::println);
 
+        // Mostrar solo el titulo de los episodios para las temporadas
         for (int i = 0; i < datos.totalTemporadas(); i++) {
             List<DatosEpisodio> episodiosTemporadas = temporadas.get(i).episodios();
             for (int j = 0; j < episodiosTemporadas.size(); j++) {
                 System.out.println(episodiosTemporadas.get(j).titulo());
             }
         }
+        // Mejoramos todo gracias a el uso de funciones lambda
         temporadas.forEach(t -> t.episodios().forEach(e -> System.out.println(e.titulo())));
 
         // Convertir todas las informaciones a una lista del tipo DatosEpisodio
@@ -49,7 +52,7 @@ public class Principal {
                 .flatMap(t -> t.episodios().stream())
                 .collect(Collectors.toList());
 
-        // Top 5 episodios
+        // Obtener Top 5 episodios
         System.out.println("\n Top 5 episodios");
         datosEpisodios.stream()
                 .filter(e -> !e.evaluacion().equalsIgnoreCase("N/A"))
@@ -67,8 +70,9 @@ public class Principal {
                         .map(d -> new Episodio(t.numero(), d)))
                 .collect(Collectors.toList());
 
-        episodios.forEach(System.out::println);
+        // episodios.forEach(System.out::println);
 
+        // Busqueda de episodios a partir de x año
         System.out.println("a partir de que año deseas ver los episodios?");
         var fecha = teclado.nextInt();
         teclado.nextLine();
@@ -83,7 +87,8 @@ public class Principal {
                                 " Fecha de Lanzamiento: " + e.getFechaDeLanzamiento().format(formatter)
                 ));
 
-        System.out.println("Por favor escriba el tirulo del episodio que desea ver");
+        // Busca episodios por un pedazo del título
+        System.out.println("Por favor escriba el titulo del episodio que desea ver");
         var pedazoTitulo = teclado.nextLine();
         Optional<Episodio> episodioBuscado = episodios.stream()
                 .filter(e -> e.getTitulo().toUpperCase().contains(pedazoTitulo.toUpperCase()))
@@ -95,7 +100,18 @@ public class Principal {
             System.out.println("Episodio no encontrado");
         }
 
+        Map<Integer, Double> evaluacionesPorTeamporada = episodios.stream()
+                .collect(Collectors.groupingBy(Episodio::getTemporada,
+                        Collectors.averagingDouble(Episodio::getEvaluacion)));
+        System.out.println(evaluacionesPorTeamporada);
 
+
+        DoubleSummaryStatistics est = episodios.stream()
+                .filter(e -> e.getEvaluacion() >0.0)
+                .collect(Collectors.summarizingDouble(Episodio::getEvaluacion));
+        System.out.println("Media de las evaluaciones: " + est.getAverage());
+        System.out.println("Episodio mejor evaluado: " + est.getMax());
+        System.out.println("Episodio Peor evaluado: " + est.getMin());
 
     }
 }
